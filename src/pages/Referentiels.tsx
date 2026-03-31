@@ -29,7 +29,7 @@ const ReferentielTab = ({ tableName, labelField, title }: { tableName: string; l
     queryFn: async () => {
       const { data, error } = await supabase.from(tableName as any).select('*').order(labelField);
       if (error) throw error;
-      return data as ReferentielItem[];
+      return (data as unknown) as ReferentielItem[];
     },
   });
 
