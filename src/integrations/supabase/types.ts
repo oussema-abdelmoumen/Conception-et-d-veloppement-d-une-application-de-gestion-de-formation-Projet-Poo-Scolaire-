@@ -14,16 +14,318 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      domaines: {
+        Row: {
+          created_at: string
+          id: string
+          libelle: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          libelle: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          libelle?: string
+        }
+        Relationships: []
+      }
+      employeurs: {
+        Row: {
+          created_at: string
+          id: string
+          nom_employeur: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom_employeur: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom_employeur?: string
+        }
+        Relationships: []
+      }
+      formateurs: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          id_employeur: string | null
+          nom: string
+          prenom: string
+          tel: string | null
+          type: Database["public"]["Enums"]["type_formateur"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_employeur?: string | null
+          nom: string
+          prenom: string
+          tel?: string | null
+          type?: Database["public"]["Enums"]["type_formateur"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_employeur?: string | null
+          nom?: string
+          prenom?: string
+          tel?: string | null
+          type?: Database["public"]["Enums"]["type_formateur"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formateurs_id_employeur_fkey"
+            columns: ["id_employeur"]
+            isOneToOne: false
+            referencedRelation: "employeurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_formateurs: {
+        Row: {
+          id: string
+          id_formateur: string
+          id_formation: string
+        }
+        Insert: {
+          id?: string
+          id_formateur: string
+          id_formation: string
+        }
+        Update: {
+          id?: string
+          id_formateur?: string
+          id_formation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_formateurs_id_formateur_fkey"
+            columns: ["id_formateur"]
+            isOneToOne: false
+            referencedRelation: "formateurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formation_formateurs_id_formation_fkey"
+            columns: ["id_formation"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_participants: {
+        Row: {
+          id: string
+          id_formation: string
+          id_participant: string
+        }
+        Insert: {
+          id?: string
+          id_formation: string
+          id_participant: string
+        }
+        Update: {
+          id?: string
+          id_formation?: string
+          id_participant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_participants_id_formation_fkey"
+            columns: ["id_formation"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formation_participants_id_participant_fkey"
+            columns: ["id_participant"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formations: {
+        Row: {
+          annee: number
+          budget: number
+          created_at: string
+          duree: number
+          id: string
+          id_domaine: string | null
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          annee: number
+          budget?: number
+          created_at?: string
+          duree: number
+          id?: string
+          id_domaine?: string | null
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          annee?: number
+          budget?: number
+          created_at?: string
+          duree?: number
+          id?: string
+          id_domaine?: string | null
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formations_id_domaine_fkey"
+            columns: ["id_domaine"]
+            isOneToOne: false
+            referencedRelation: "domaines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participants: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          id_profil: string | null
+          id_structure: string | null
+          nom: string
+          prenom: string
+          tel: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_profil?: string | null
+          id_structure?: string | null
+          nom: string
+          prenom: string
+          tel?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          id_profil?: string | null
+          id_structure?: string | null
+          nom?: string
+          prenom?: string
+          tel?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participants_id_profil_fkey"
+            columns: ["id_profil"]
+            isOneToOne: false
+            referencedRelation: "profils"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participants_id_structure_fkey"
+            columns: ["id_structure"]
+            isOneToOne: false
+            referencedRelation: "structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profils: {
+        Row: {
+          created_at: string
+          id: string
+          libelle: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          libelle: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          libelle?: string
+        }
+        Relationships: []
+      }
+      structures: {
+        Row: {
+          created_at: string
+          id: string
+          libelle: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          libelle: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          libelle?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "administrateur" | "responsable" | "simple_utilisateur"
+      type_formateur: "interne" | "externe"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +452,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["administrateur", "responsable", "simple_utilisateur"],
+      type_formateur: ["interne", "externe"],
+    },
   },
 } as const
