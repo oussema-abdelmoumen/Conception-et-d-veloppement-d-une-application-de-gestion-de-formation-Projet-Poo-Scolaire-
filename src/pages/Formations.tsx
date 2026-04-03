@@ -4,13 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Search, Loader2, BookOpen } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Loader2, BookOpen, Users, X } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Formations = () => {
   const { toast } = useToast();
@@ -22,6 +24,8 @@ const Formations = () => {
   const [filterDomaine, setFilterDomaine] = useState<string>('');
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ titre: '', annee: new Date().getFullYear(), duree: 1, id_domaine: '', budget: 0 });
+  const [participantsDialogId, setParticipantsDialogId] = useState<string | null>(null);
+  const [participantsSearch, setParticipantsSearch] = useState('');
 
   const { data: formations, isLoading } = useQuery({
     queryKey: ['formations'],
@@ -38,6 +42,51 @@ const Formations = () => {
       const { data } = await supabase.from('domaines').select('*').order('libelle');
       return data || [];
     },
+  });
+
+  const { data: allParticipants } = useQuery({
+    queryKey: ['participants'],
+    queryFn: async () => {
+      const { data } = await supabase.from('participants').select('*, structures(libelle)').order('nom');
+      return data || [];
+    },
+  });
+
+  const { data: formationParticipants, isLoading: loadingFP } = useQuery({
+    queryKey: ['formation_participants', participantsDialogId],
+    queryFn: async () => {
+      if (!participantsDialogId) return [];
+      const { data } = await supabase.from('formation_participants').select('id_participant').eq('id_formation', participantsDialogId);
+      return data?.map(fp => fp.id_participant) || [];
+    },
+    enabled: !!participantsDialogId,
+  });
+
+  const { data: formationParticipantCounts } = useQuery({
+    queryKey: ['formation_participant_counts'],
+    queryFn: async () => {
+      const { data } = await supabase.from('formation_participants').select('id_formation');
+      const counts: Record<string, number> = {};
+      data?.forEach(fp => { counts[fp.id_formation] = (counts[fp.id_formation] || 0) + 1; });
+      return counts;
+    },
+  });
+
+  const toggleParticipantMutation = useMutation({
+    mutationFn: async ({ formationId, participantId, add }: { formationId: string; participantId: string; add: boolean }) => {
+      if (add) {
+        const { error } = await supabase.from('formation_participants').insert({ id_formation: formationId, id_participant: participantId });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('formation_participants').delete().eq('id_formation', formationId).eq('id_participant', participantId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['formation_participants', participantsDialogId] });
+      queryClient.invalidateQueries({ queryKey: ['formation_participant_counts'] });
+    },
+    onError: () => toast({ title: 'Erreur', description: "Échec de l'opération", variant: 'destructive' }),
   });
 
   const saveMutation = useMutation({
@@ -86,12 +135,19 @@ const Formations = () => {
 
   const filtered = formations?.filter((f: any) => {
     const matchSearch = f.titre.toLowerCase().includes(search.toLowerCase());
-    const matchYear = !filterYear || f.annee === Number(filterYear);
+    const matchYear = !filterYear || filterYear === 'all' || f.annee === Number(filterYear);
     const matchDomaine = !filterDomaine || filterDomaine === 'all' || f.id_domaine === filterDomaine;
     return matchSearch && matchYear && matchDomaine;
   }) || [];
 
   const years = [...new Set(formations?.map((f: any) => f.annee) || [])].sort((a, b) => b - a);
+
+  const filteredParticipants = allParticipants?.filter(p => {
+    const q = participantsSearch.toLowerCase();
+    return p.nom.toLowerCase().includes(q) || p.prenom.toLowerCase().includes(q);
+  }) || [];
+
+  const selectedFormation = formations?.find(f => f.id === participantsDialogId);
 
   return (
     <div className="space-y-4">
@@ -140,6 +196,7 @@ const Formations = () => {
                   <TableHead>Durée (j)</TableHead>
                   <TableHead>Domaine</TableHead>
                   <TableHead>Budget (DA)</TableHead>
+                  <TableHead>Participants</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -151,6 +208,12 @@ const Formations = () => {
                     <TableCell>{f.duree}</TableCell>
                     <TableCell>{f.domaines?.libelle || '—'}</TableCell>
                     <TableCell>{Number(f.budget).toLocaleString('fr-FR')}</TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => { setParticipantsDialogId(f.id); setParticipantsSearch(''); }}>
+                        <Users className="h-4 w-4 mr-1" />
+                        {formationParticipantCounts?.[f.id] || 0}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => setDeleteId(f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -163,6 +226,7 @@ const Formations = () => {
         </CardContent>
       </Card>
 
+      {/* Dialog formulaire formation */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
@@ -204,6 +268,70 @@ const Formations = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog gestion des participants */}
+      <Dialog open={!!participantsDialogId} onOpenChange={() => setParticipantsDialogId(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Participants — {selectedFormation?.titre}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Rechercher un participant..." value={participantsSearch} onChange={(e) => setParticipantsSearch(e.target.value)} className="pl-10" />
+            </div>
+
+            {/* Participants inscrits */}
+            {formationParticipants && formationParticipants.length > 0 && (
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Inscrits ({formationParticipants.length})</Label>
+                <div className="flex flex-wrap gap-2">
+                  {allParticipants?.filter(p => formationParticipants.includes(p.id)).map(p => (
+                    <Badge key={p.id} variant="secondary" className="gap-1 pr-1">
+                      {p.nom} {p.prenom}
+                      <button
+                        onClick={() => toggleParticipantMutation.mutate({ formationId: participantsDialogId!, participantId: p.id, add: false })}
+                        className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Liste pour ajouter */}
+            <div className="border rounded-md max-h-60 overflow-y-auto">
+              {loadingFP ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              ) : filteredParticipants.length === 0 ? (
+                <p className="text-center py-4 text-muted-foreground text-sm">Aucun participant trouvé</p>
+              ) : (
+                filteredParticipants.map(p => {
+                  const isSelected = formationParticipants?.includes(p.id) || false;
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                      onClick={() => toggleParticipantMutation.mutate({ formationId: participantsDialogId!, participantId: p.id, add: !isSelected })}
+                    >
+                      <Checkbox checked={isSelected} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{p.nom} {p.prenom}</p>
+                        <p className="text-xs text-muted-foreground">{p.structures?.libelle || '—'}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
