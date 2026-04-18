@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseCompat as supabase } from '@/lib/api/supabaseCompat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -140,7 +140,7 @@ const Formations = () => {
     return matchSearch && matchYear && matchDomaine;
   }) || [];
 
-  const years = [...new Set(formations?.map((f: any) => f.annee) || [])].sort((a, b) => b - a);
+  const years = [...new Set((formations?.map((f: any) => f.annee) || []) as number[])].sort((a, b) => b - a);
 
   const filteredParticipants = allParticipants?.filter(p => {
     const q = participantsSearch.toLowerCase();
@@ -167,7 +167,7 @@ const Formations = () => {
               <SelectTrigger className="w-[140px]"><SelectValue placeholder="Année" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes</SelectItem>
-                {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                {years.map((y: number) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterDomaine} onValueChange={setFilterDomaine}>

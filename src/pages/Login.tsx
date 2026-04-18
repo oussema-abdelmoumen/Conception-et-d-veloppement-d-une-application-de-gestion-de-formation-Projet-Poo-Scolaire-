@@ -70,10 +70,10 @@ const Login = () => {
             </Button>
           </form>
           <div className="mt-6 rounded-lg bg-muted p-3 text-xs text-muted-foreground space-y-1">
-            <p className="font-medium">Comptes de test :</p>
-            <p>admin@greenbuilding.com / admin123</p>
-            <p>responsable@greenbuilding.com / resp123</p>
-            <p>user1@greenbuilding.com / user123</p>
+            <p className="font-medium">Comptes de test (mot de passe : Admin123!) :</p>
+            <p>admin@greenbuilding.com</p>
+            <p>responsable@greenbuilding.com</p>
+            <p>utilisateur@greenbuilding.com</p>
           </div>
         </CardContent>
       </Card>
